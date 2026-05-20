@@ -1,10 +1,49 @@
 const userModel = require("../models/user.model");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
+const { serializeUser } = require('../utils/serializers');
 
+const roles = ["user", "artist"];
+
+
+function createToken(user) {
+  return jwt.sign(
+    {
+      id: user._id,
+      role: user.role,
+    },
+    process.env.JWT_SECRET,
+    { expiresIn: "7d" }
+  );
+}
+
+function setAuthCookie(res, token) {
+  res.cookie("token", token, {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    maxAge: 7 * 24 * 60 * 60 * 1000,
+    path: "/",
+  });
+}
 
 async function registerUser(req, res) {
-  const { username, email, password, role = "user" } = req.body;
+  const username = String(req.body.username || "").trim();
+  const email = String(req.body.email || "").trim().toLowerCase();
+  const password = String(req.body.password || "");
+  const role = req.body.role || "user";
+
+  if (!username || !email || !password) {
+    return res.status(400).json({
+      message: "Username, email, and password are required",
+    });
+  }
+
+  if (!roles.includes(role)) {
+    return res.status(400).json({
+      message: "Invalid role",
+    });
+  }
  
   const isUserAlreadyExits = await userModel.findOne({
     $or: [
@@ -28,28 +67,27 @@ async function registerUser(req, res) {
     role
   })
 
-  const token = jwt.sign({
-    id: newUser._id,
-    role: newUser.role
-  }, process.env.JWT_SECRET)
-
-  res.cookie("token", token)
+  const token = createToken(newUser);
+  setAuthCookie(res, token);
 
   res.status(201).json({
     message: "User registered successfully",
-    user: {
-      id: newUser._id,
-      username: newUser.username,
-      email: newUser.email,
-      role: newUser.role
-    }
+    user: serializeUser(newUser),
   })
 
 
 }
 
 async function loginUser(req, res) {
-  const {username, email, password} = req.body;
+  const username = req.body.username ? String(req.body.username).trim() : "";
+  const email = req.body.email ? String(req.body.email).trim().toLowerCase() : "";
+  const password = String(req.body.password || "");
+
+  if ((!username && !email) || !password) {
+    return res.status(400).json({
+      message: "Username or email and password are required",
+    });
+  }
 
   const user = await userModel.findOne({
     $or: [
@@ -72,29 +110,43 @@ async function loginUser(req, res) {
     })
   }
 
-  const token = jwt.sign({
-    id: user._id,
-    role: user.role
-  }, process.env.JWT_SECRET)
+  const token = createToken(user);
   
-  res.cookie("token", token)
+  setAuthCookie(res, token);
 
   res.status(200).json({
     message: "User logged in successfully",
-    user: {
-      id: user._id,
-      username: user.username,
-      email: user.email,
-      role: user.role
-    }
+    user: serializeUser(user),
   })
 }
 
 async function logoutUser(req, res) {
-  res.clearCookie("token");
+  res.clearCookie("token", {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+  });
   res.status(200).json({
     message: "User logged out successfully",
   });
 }
 
-module.exports = {registerUser, loginUser, logoutUser};
+async function getCurrentUser(req, res) {
+  const token = (req.cookies && req.cookies.token) || (req.headers.authorization && req.headers.authorization.split(' ')[1]);
+
+  if (!token) return res.status(401).json({ error: 'Authentication required' });
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const user = await userModel.findById(decoded.id);
+
+    if (!user) return res.status(401).json({ error: 'User not found' });
+
+    return res.status(200).json({ user: serializeUser(user) });
+  } catch (error) {
+    return res.status(401).json({ error: 'Invalid or expired token' });
+  }
+}
+
+module.exports = {registerUser, loginUser, logoutUser, getCurrentUser};
