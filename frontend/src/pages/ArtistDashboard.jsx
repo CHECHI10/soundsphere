@@ -4,6 +4,7 @@ import { musicApi } from "../api/client.js";
 import EmptyState from "../components/EmptyState.jsx";
 import TrackRow from "../components/TrackRow.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
+import { useNotification } from "../context/NotificationContext.jsx";
 import { formatTime } from "../utils/format.js";
 
 function formatEta(seconds) {
@@ -41,6 +42,7 @@ function readAudioDuration(file) {
 
 export default function ArtistDashboard() {
   const { user } = useAuth();
+  const { notify } = useNotification();
   const [tracks, setTracks] = useState([]);
   const [albums, setAlbums] = useState([]);
   const [uploads, setUploads] = useState([]);
@@ -55,6 +57,8 @@ export default function ArtistDashboard() {
   const [albumTitle, setAlbumTitle] = useState("");
   const [selectedTracks, setSelectedTracks] = useState([]);
   const [submittingUpload, setSubmittingUpload] = useState(false);
+  const [uploadCancel, setUploadCancel] = useState(null);
+  const [uploadCancelled, setUploadCancelled] = useState(false);
   const [submittingAlbum, setSubmittingAlbum] = useState(false);
   const [fileInputKey, setFileInputKey] = useState(0);
   const [uploadProgress, setUploadProgress] = useState(null);
@@ -126,7 +130,9 @@ export default function ArtistDashboard() {
       formData.append("duration", String(uploadDuration));
       formData.append("genre", uploadGenre);
       formData.append("mood", uploadMood);
-      await musicApi.uploadMusicWithProgress(formData, setUploadProgress);
+      const uploadPromise = musicApi.uploadMusicWithProgress(formData, setUploadProgress);
+      setUploadCancel(() => uploadPromise.cancel || null);
+      await uploadPromise;
       setUploadTitle("");
       setMusicFile(null);
       setUploadDuration(0);
@@ -136,10 +142,14 @@ export default function ArtistDashboard() {
       setMessage("Track uploaded.");
       await loadArtistData();
     } catch (requestError) {
+      if (requestError.message === "Upload cancelled") {
+        notify("Upload cancelled", "neutral");
+      }
       setError(requestError.message);
     } finally {
       setSubmittingUpload(false);
       setUploadProgress(null);
+      setUploadCancel(null);
     }
   }
 
@@ -230,7 +240,42 @@ export default function ArtistDashboard() {
                   <span className="font-medium text-white">
                     {uploadProgress.phase === "processing" ? "Processing upload" : "Please wait, song is uploading"}
                   </span>
-                  <span className="text-neutral-400">{uploadProgress.percent}%</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-neutral-400">{uploadProgress.percent}%</span>
+                    {uploadCancelled ? (
+                      <button
+                        type="button"
+                        className="btn-primary h-8 px-2 text-xs"
+                        onClick={() => {
+                          setUploadCancelled(false);
+                          setError("");
+                          setMessage("");
+                          setSubmittingUpload(true);
+                          // retry by calling handleUpload with a fake event
+                          handleUpload({ preventDefault: () => {} });
+                        }}
+                      >
+                        Retry
+                      </button>
+                    ) : uploadCancel ? (
+                      <button
+                        type="button"
+                        className="btn-secondary h-8 px-2 text-xs"
+                        onClick={() => {
+                          try {
+                            uploadCancel();
+                          } catch (e) {}
+                          setSubmittingUpload(false);
+                          setUploadProgress(null);
+                          setUploadCancel(null);
+                          setUploadCancelled(true);
+                          notify("Upload cancelled", "neutral");
+                        }}
+                      >
+                        Cancel
+                      </button>
+                    ) : null}
+                  </div>
                 </div>
                 <div className="h-2 overflow-hidden rounded-full bg-ink-800">
                   <div

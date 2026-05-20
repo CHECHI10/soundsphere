@@ -47,8 +47,14 @@ export function AuthProvider({ children }) {
   }
 
   async function logout() {
-    await authApi.logout();
-    setUser(null);
+      try {
+        await authApi.logout();
+        return { ok: true };
+      } catch (error) {
+        return { ok: false, error };
+      } finally {
+        setUser(null);
+      }
   }
 
   const value = useMemo(

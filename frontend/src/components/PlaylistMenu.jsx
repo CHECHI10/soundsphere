@@ -16,6 +16,7 @@ export default function PlaylistMenu({ track }) {
     try {
       await addToPlaylist(playlistId, track.id);
       setMessage("Added");
+      setOpen(false);
     } catch (error) {
       setMessage(error.message);
     } finally {
@@ -39,6 +40,7 @@ export default function PlaylistMenu({ track }) {
       await addToPlaylist(playlist.id, track.id);
       setNewPlaylistName("");
       setMessage("Playlist created");
+      setOpen(false);
     } catch (error) {
       setMessage(error.message);
     } finally {

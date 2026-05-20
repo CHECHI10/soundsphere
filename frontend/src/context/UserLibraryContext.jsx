@@ -1,11 +1,13 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { libraryApi, playlistApi } from "../api/client.js";
 import { useAuth } from "./AuthContext.jsx";
+import { useNotification } from "./NotificationContext.jsx";
 
 const UserLibraryContext = createContext(null);
 
 export function UserLibraryProvider({ children }) {
   const { user } = useAuth();
+  const { notify } = useNotification();
   const [playlists, setPlaylists] = useState([]);
   const [likedSongs, setLikedSongs] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -59,24 +61,27 @@ export function UserLibraryProvider({ children }) {
   const createPlaylist = useCallback(async (name) => {
     const data = await playlistApi.create({ name });
     setPlaylists((current) => [data.playlist, ...current]);
+    notify(`Created playlist “${data.playlist.name}”`, "success");
     return data.playlist;
-  }, []);
+  }, [notify]);
 
   const addToPlaylist = useCallback(async (playlistId, musicId) => {
     const data = await playlistApi.addMusic(playlistId, musicId);
     setPlaylists((current) =>
       current.map((playlist) => (playlist.id === data.playlist.id ? data.playlist : playlist))
     );
+    notify(`Added to ${data.playlist.name}`, "success");
     return data.playlist;
-  }, []);
+  }, [notify]);
 
   const removeFromPlaylist = useCallback(async (playlistId, musicId) => {
     const data = await playlistApi.removeMusic(playlistId, musicId);
     setPlaylists((current) =>
       current.map((playlist) => (playlist.id === data.playlist.id ? data.playlist : playlist))
     );
+    notify(`Removed from ${data.playlist.name}`, "neutral");
     return data.playlist;
-  }, []);
+  }, [notify]);
 
   const value = useMemo(
     () => ({

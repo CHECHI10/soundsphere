@@ -45,4 +45,10 @@ async function search(req, res) {
   });
 }
 
-module.exports = { search };
+function wrap(fn) {
+  return function (req, res, next) {
+    Promise.resolve(fn(req, res, next)).catch(next);
+  };
+}
+
+module.exports = { search: wrap(search) };

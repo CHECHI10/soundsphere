@@ -37,8 +37,12 @@ async function request(path, options = {}) {
 }
 
 function requestWithUploadProgress(path, formData, onProgress) {
-  return new Promise((resolve, reject) => {
+  // returns a promise that also has a `.cancel()` method to abort the upload
+  let xhrRef = null;
+
+  const promise = new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
+    xhrRef = xhr;
     const startedAt = Date.now();
 
     xhr.open("POST", `${API_URL}${path}`);
@@ -91,6 +95,17 @@ function requestWithUploadProgress(path, formData, onProgress) {
     xhr.onabort = () => reject(new Error("Upload cancelled"));
     xhr.send(formData);
   });
+
+  // attach a cancel method to the promise so callers can abort
+  promise.cancel = () => {
+    try {
+      if (xhrRef) xhrRef.abort();
+    } catch (e) {
+      // ignore
+    }
+  };
+
+  return promise;
 }
 
 export const authApi = {

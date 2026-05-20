@@ -20,3 +20,12 @@ Thumbs.db
 
 .vite/
 .cache/
+
+# temp files from local upload/login test runs
+backend/cookie.txt
+backend/cookiejar.txt
+backend/scripts/sample.mp3
+backend/test-sample.mp3
+
+
+.github/

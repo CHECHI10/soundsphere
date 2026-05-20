@@ -40,4 +40,10 @@ async function getArtistProfile(req, res) {
   });
 }
 
-module.exports = { getArtistProfile };
+function wrap(fn) {
+  return function (req, res, next) {
+    Promise.resolve(fn(req, res, next)).catch(next);
+  };
+}
+
+module.exports = { getArtistProfile: wrap(getArtistProfile) };

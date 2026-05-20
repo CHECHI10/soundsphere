@@ -36,15 +36,19 @@ export default function Login() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-ink-950 px-4 py-10">
-      <section className="w-full max-w-md rounded-lg border border-ink-700 bg-ink-900 p-6 shadow-panel">
+    <main
+      className="relative flex min-h-screen items-center justify-center overflow-hidden px-4 py-10"
+      style={{ backgroundImage: "linear-gradient(rgba(3,5,5,0.82), rgba(3,5,5,0.86)), url('/login-background.svg')", backgroundSize: "cover", backgroundPosition: "center" }}
+    >
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(30,215,96,0.18),_transparent_32%),radial-gradient(circle_at_bottom_right,_rgba(154,232,182,0.08),_transparent_28%)]" />
+      <section className="relative z-10 w-full max-w-md rounded-2xl border border-white/10 bg-ink-900/85 p-6 shadow-panel backdrop-blur-md sm:p-7">
         <div className="mb-8 flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-md bg-accent text-black">
+          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-accent text-black shadow-[0_0_24px_rgba(30,215,96,0.22)]">
             <Music2 size={20} />
           </div>
           <div>
             <h1 className="text-xl font-semibold text-white">Sign in</h1>
-            <p className="text-sm text-neutral-500">Spotify</p>
+            <p className="text-sm text-neutral-400">Spotify</p>
           </div>
         </div>
 

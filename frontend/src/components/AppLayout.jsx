@@ -1,7 +1,10 @@
 import { Clock3, Disc3, Heart, Home, ListMusic, LogOut, Music2, Search, UploadCloud } from "lucide-react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { useState } from "react";
 import { useAuth } from "../context/AuthContext.jsx";
+import { useNotification } from "../context/NotificationContext.jsx";
 import PlayerBar from "./PlayerBar.jsx";
+import ConfirmModal from "./ConfirmModal.jsx";
 
 const navBase =
   "flex h-11 items-center gap-3 rounded-md px-3 text-sm font-medium transition";
@@ -10,7 +13,10 @@ const navActive = "bg-ink-800 text-white";
 
 export default function AppLayout() {
   const { user, logout } = useAuth();
+  const { notify } = useNotification();
   const navigate = useNavigate();
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [logoutPending, setLogoutPending] = useState(false);
   const navItems = [
     { to: "/", label: "Library", icon: Home },
     { to: "/search", label: "Search", icon: Search },
@@ -20,9 +26,29 @@ export default function AppLayout() {
     ...(user?.role === "artist" ? [{ to: "/artist", label: "Artist", icon: UploadCloud }] : []),
   ];
 
-  async function handleLogout() {
-    await logout();
-    navigate("/login", { replace: true });
+  function openLogoutConfirm() {
+    setShowLogoutConfirm(true);
+  }
+
+  async function confirmLogout() {
+    setLogoutPending(true);
+
+    try {
+      const result = await logout();
+      setShowLogoutConfirm(false);
+      if (result?.error) {
+        notify(result.error.message || "Logged out locally, but the server sign-out failed", "error");
+      } else {
+        notify("Logged out", "success");
+      }
+      navigate("/login", { replace: true });
+    } finally {
+      setLogoutPending(false);
+    }
+  }
+
+  function cancelLogout() {
+    setShowLogoutConfirm(false);
   }
 
   return (
@@ -61,7 +87,7 @@ export default function AppLayout() {
               <p className="truncate text-xs text-neutral-500">{user?.email}</p>
             </div>
           </div>
-          <button className="btn-secondary w-full" type="button" onClick={handleLogout}>
+          <button className="btn-secondary w-full" type="button" onClick={openLogoutConfirm}>
             <LogOut size={16} />
             Logout
           </button>
@@ -79,7 +105,7 @@ export default function AppLayout() {
               <p className="text-xs text-neutral-500">{user?.username}</p>
             </div>
           </div>
-          <button className="icon-button" type="button" onClick={handleLogout} title="Logout">
+          <button className="icon-button" type="button" onClick={openLogoutConfirm} title="Logout">
             <LogOut size={18} />
           </button>
         </div>
@@ -104,6 +130,16 @@ export default function AppLayout() {
       </main>
 
       <PlayerBar />
+      <ConfirmModal
+        isOpen={showLogoutConfirm}
+        title="Confirm logout"
+        description="Are you sure you want to log out?"
+        confirmLabel={logoutPending ? "Logging out..." : "Logout"}
+        confirmTone="danger"
+        confirmDisabled={logoutPending}
+        onCancel={cancelLogout}
+        onConfirm={confirmLogout}
+      />
     </div>
   );
 }
