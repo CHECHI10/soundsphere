@@ -79,13 +79,14 @@ export default function Register() {
               type="password"
               value={form.password}
               onChange={(event) => updateField("password", event.target.value)}
-              // required
+              required
+
             />
           </label>
 
           <div>
             <span className="mb-2 block text-sm font-medium text-neutral-300">Account type</span>
-            <div className="grid grid-cols-2 gap-2 rounded-md border border-ink-700 bg-ink-950 p-1">
+            <div className="grid  grid-cols-2 gap-2 rounded-md border border-ink-700 bg-ink-950 p-1">
               {[
                 { label: "Listener", value: "user" },
                 { label: "Artist", value: "artist" },
@@ -113,7 +114,7 @@ export default function Register() {
         <p className="mt-6 text-center text-sm text-neutral-500">
           Already have an account?{" "}
           <Link className="font-semibold text-accent hover:text-white" to="/login">
-            Sign in
+            Sign in 
           </Link>
         </p>
       </section>

@@ -1,108 +1,89 @@
+import axios from "axios";
+
 const API_URL = (import.meta.env.VITE_API_URL || "http://localhost:5000/api").replace(/\/$/, "");
 
-async function parseResponse(response) {
-  const text = await response.text();
+const apiClient = axios.create({
+  baseURL: API_URL,
+  withCredentials: true,
+});
 
-  if (!text) {
-    return {};
+function getErrorMessage(error) {
+  if (error.code === "ERR_CANCELED") {
+    return "Upload cancelled";
   }
 
-  try {
-    return JSON.parse(text);
-  } catch (error) {
-    return { message: text };
+  const responseMessage = error.response?.data?.message || error.response?.data?.error;
+
+  if (responseMessage) {
+    return responseMessage;
   }
+
+  if (typeof error.response?.data === "string") {
+    return error.response.data;
+  }
+
+  return error.message || "Request failed";
+}
+
+function normalizeError(error) {
+  return new Error(getErrorMessage(error));
 }
 
 async function request(path, options = {}) {
-  const isFormData = options.body instanceof FormData;
-  const response = await fetch(`${API_URL}${path}`, {
-    method: options.method || "GET",
-    credentials: "include",
-    headers: isFormData
-      ? options.headers
-      : {
-          "Content-Type": "application/json",
-          ...options.headers,
-        },
-    body: isFormData ? options.body : options.body ? JSON.stringify(options.body) : undefined,
-  });
-  const data = await parseResponse(response);
+  try {
+    const response = await apiClient.request({
+      url: path,
+      method: options.method || "GET",
+      data: options.body,
+      headers: options.headers,
+    });
 
-  if (!response.ok) {
-    throw new Error(data.message || "Request failed");
+    return response.data || {};
+  } catch (error) {
+    throw normalizeError(error);
   }
-
-  return data;
 }
 
 function requestWithUploadProgress(path, formData, onProgress) {
-  // returns a promise that also has a `.cancel()` method to abort the upload
-  let xhrRef = null;
+  const controller = new AbortController();
+  const startedAt = Date.now();
 
-  const promise = new Promise((resolve, reject) => {
-    const xhr = new XMLHttpRequest();
-    xhrRef = xhr;
-    const startedAt = Date.now();
+  const promise = apiClient
+    .post(path, formData, {
+      signal: controller.signal,
+      onUploadProgress: (event) => {
+        if (!event.total) {
+          onProgress?.({
+            percent: 0,
+            loaded: event.loaded,
+            total: 0,
+            etaSeconds: null,
+            phase: "uploading",
+          });
+          return;
+        }
 
-    xhr.open("POST", `${API_URL}${path}`);
-    xhr.withCredentials = true;
+        const elapsedSeconds = Math.max((Date.now() - startedAt) / 1000, 0.1);
+        const bytesPerSecond = event.loaded / elapsedSeconds;
+        const remainingBytes = Math.max(event.total - event.loaded, 0);
+        const etaSeconds = bytesPerSecond > 0 ? Math.ceil(remainingBytes / bytesPerSecond) : null;
 
-    xhr.upload.onprogress = (event) => {
-      if (!event.lengthComputable) {
         onProgress?.({
-          percent: 0,
+          percent: Math.round((event.loaded / event.total) * 100),
           loaded: event.loaded,
-          total: 0,
-          etaSeconds: null,
-          phase: "uploading",
+          total: event.total,
+          etaSeconds,
+          phase: event.loaded >= event.total ? "processing" : "uploading",
         });
-        return;
-      }
+      },
+    })
+    .then((response) => response.data || {})
+    .catch((error) => {
+      throw normalizeError(error);
+    });
 
-      const elapsedSeconds = Math.max((Date.now() - startedAt) / 1000, 0.1);
-      const bytesPerSecond = event.loaded / elapsedSeconds;
-      const remainingBytes = Math.max(event.total - event.loaded, 0);
-      const etaSeconds = bytesPerSecond > 0 ? Math.ceil(remainingBytes / bytesPerSecond) : null;
-
-      onProgress?.({
-        percent: Math.round((event.loaded / event.total) * 100),
-        loaded: event.loaded,
-        total: event.total,
-        etaSeconds,
-        phase: event.loaded >= event.total ? "processing" : "uploading",
-      });
-    };
-
-    xhr.onload = () => {
-      let data = {};
-
-      try {
-        data = xhr.responseText ? JSON.parse(xhr.responseText) : {};
-      } catch (error) {
-        data = { message: xhr.responseText };
-      }
-
-      if (xhr.status >= 200 && xhr.status < 300) {
-        resolve(data);
-        return;
-      }
-
-      reject(new Error(data.message || "Request failed"));
-    };
-
-    xhr.onerror = () => reject(new Error("Upload failed"));
-    xhr.onabort = () => reject(new Error("Upload cancelled"));
-    xhr.send(formData);
-  });
-
-  // attach a cancel method to the promise so callers can abort
   promise.cancel = () => {
-    try {
-      if (xhrRef) xhrRef.abort();
-    } catch (e) {
-      // ignore
-    }
+    controller.abort();
   };
 
   return promise;
