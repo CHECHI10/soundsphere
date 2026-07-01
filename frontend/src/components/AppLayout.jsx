@@ -59,7 +59,7 @@ export default function AppLayout() {
             <Music2 size={19} />
           </div>
           <div>
-            <p className="text-sm font-semibold text-white">Spotify</p>
+            <p className="text-sm font-semibold text-white">soundSphere</p>
             <p className="text-xs text-neutral-500">{user?.role === "artist" ? "Artist" : "Listener"}</p>
           </div>
         </div>
@@ -101,7 +101,7 @@ export default function AppLayout() {
               <Disc3 size={18} />
             </div>
             <div>
-              <p className="text-sm font-semibold">Spotify</p>
+              <p className="text-sm font-semibold">soundSphere</p>
               <p className="text-xs text-neutral-500">{user?.username}</p>
             </div>
           </div>

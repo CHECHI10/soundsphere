@@ -2,7 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { libraryApi } from "../api/client.js";
 
 const PlayerContext = createContext(null);
-const PLAYER_STORAGE_KEY = "spotify-player-state";
+const PLAYER_STORAGE_KEY = "soundSphere-player-state";
 
 function loadStoredPlayer() {
   try {

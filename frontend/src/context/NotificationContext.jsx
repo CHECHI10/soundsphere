@@ -10,7 +10,7 @@ export function NotificationProvider({ children }) {
     const id = Date.now();
     setNotification({ id, message, tone });
     return id;
-  }, []);
+  }, []); 
 
   const clearNotification = useCallback((id) => {
     setNotification((current) => (current?.id === id ? null : current));

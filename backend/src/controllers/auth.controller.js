@@ -20,8 +20,8 @@ function createToken(user) {
 function setAuthCookie(res, token) {
   res.cookie("token", token, {
     httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
+    sameSite: "none",
+    secure: true,
     maxAge: 7 * 24 * 60 * 60 * 1000,
     path: "/",
   });
@@ -45,14 +45,14 @@ async function registerUser(req, res) {
     });
   }
  
-  const isUserAlreadyExits = await userModel.findOne({
+  const isUserAlreadyExists = await userModel.findOne({
     $or: [
       {username},
       {email}
     ]
   })
 
-  if(isUserAlreadyExits) {
+  if(isUserAlreadyExists) {
     return res.status(409).json({
       message: "User already exists"
     })
@@ -123,8 +123,8 @@ async function loginUser(req, res) {
 async function logoutUser(req, res) {
   res.clearCookie("token", {
     httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
+    sameSite: "none",
+    secure: true,
     path: "/",
   });
   res.status(200).json({

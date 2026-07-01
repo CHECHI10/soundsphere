@@ -13,14 +13,14 @@ async function uploadFile(file) {
   // file is expected as base64 string
   if (!imageKitClient) {
     // Fallback: return a fake URL so local development/tests work without ImageKit
-    return { url: `https://example.com/spotify-${Date.now()}.mp3` };
+    return { url: `https://example.com/soundSphere-${Date.now()}.mp3` };
   }
 
   try {
     const result = await imageKitClient.files.upload({
       file,
-      fileName: `spotify-${Date.now()}`,
-      folder: '/spotify',
+      fileName: `soundSphere-${Date.now()}`,
+      folder: '/soundSphere',
     });
 
     return result;

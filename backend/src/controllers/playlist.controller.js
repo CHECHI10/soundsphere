@@ -227,7 +227,7 @@ async function reorderPlaylist(req, res) {
   }
 
   // ensure stored as ObjectId instances
-  playlist.musics = musics.map((id) => mongoose.Types.ObjectId(id));
+  playlist.musics = musics.map((id) =>  new mongoose.Types.ObjectId(id));
   await playlist.save();
   await playlist.populate("owner", "username email role");
   await playlist.populate({

@@ -48,7 +48,7 @@ export default function Login() {
           </div>
           <div>
             <h1 className="text-xl font-semibold text-white">Sign in</h1>
-            <p className="text-sm text-neutral-400">Spotify</p>
+            <p className="text-sm text-neutral-400">soundSphere</p>
           </div>
         </div>
 
