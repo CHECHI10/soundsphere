@@ -26,8 +26,6 @@ Thumbs.db
 
 .agents
 .github
-assets/
-screenshots/
 
 # temp files from local upload/login test runs
 backend/cookie.txt
