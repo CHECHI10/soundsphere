@@ -21,6 +21,14 @@ Thumbs.db
 .vite/
 .cache/
 
+.vscode/
+.idea/
+
+.agents
+.github
+assets/
+screenshots/
+
 # temp files from local upload/login test runs
 backend/cookie.txt
 backend/cookiejar.txt
