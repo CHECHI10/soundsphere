@@ -535,8 +535,6 @@ This project is licensed under the MIT License. See the `LICENSE` file for more 
 
 GitHub: https://github.com/CHECHI10
 
-LinkedIn: <www.linkedin.com/in/rohit-choudhary01
-
->
+LinkedIn: https://www.linkedin.com/in/rohit-choudhary01
 
 Email: <rohitchechi10@gmail.com>
